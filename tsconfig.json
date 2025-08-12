@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "lib": ["es2021", "dom", "es2015"],
+    "module": "commonjs",
+    "rootDir": "./src",
+    "allowJs": true,
+    "declaration": true,
+    "sourceMap": true,
+    "outDir": "./dist",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "include": ["./src"],
+  "exclude": [
+    "./index.js",
+    "./index.d.ts",
+    "./src/index.js",
+    "./src/index.d.ts",
+    "node_modules",
+    "dist",
+    "features"
+  ]
+}
