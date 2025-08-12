@@ -20,24 +20,46 @@ export const create = ({
   client,
   getIndexForModel = defaultGetIndexForModel,
 }: types.DatastoreProviderInputs): DatastoreProvider => {
+  const _checkOrCreateIndex = async (client: any, index: string) => {
+    if (await client.indices.exists({ index })) {
+      return
+    }
+    await client.indices.create({
+      index,
+      body: {
+        mappings: {
+          properties: {
+            id: { type: 'keyword' },
+            name: { type: 'keyword' },
+            aNumber: { type: 'double' },
+            aBool: { type: 'boolean' },
+            aDate: { type: 'date' },
+          },
+        },
+      },
+    })
+  }
+
   const retrieve = async <T extends FunctionalModel>(
     model: Model<T>,
     id: PrimaryKeyType
   ) => {
     const index = getIndexForModel(model)
-    const { body } = await client.get({
-      index,
-      id,
-    }).catch((e: any) => {
-      if (e.meta.statusCode === StatusCodes.NOT_FOUND) {
-        return {
-          body: {
-            _source: undefined,
-          },
+    const { body } = await client
+      .get({
+        index,
+        id,
+      })
+      .catch((e: any) => {
+        if (e.meta.statusCode === StatusCodes.NOT_FOUND) {
+          return {
+            body: {
+              _source: undefined,
+            },
+          }
         }
-      }
-      throw e
-    })
+        throw e
+      })
 
     return body._source
   }
@@ -49,14 +71,25 @@ export const create = ({
     return Promise.resolve().then(async () => {
       const index = getIndexForModel(model)
       const search = toElasticSearch(index, ormQuery)
-      const results = await client.search(search).then((response: any) => {
-        const toMap = get(response, 'body.hits.hits', [])
-        const instances = toMap.map((raw: any) => raw._source)
-        return {
-          instances,
-          page: undefined,
-        }
-      })
+      const results = await client
+        .search(search)
+        .then((response: any) => {
+          const toMap = get(response, 'body.hits.hits', [])
+          const instances = toMap.map((raw: any) => raw._source)
+          return {
+            instances,
+            page: undefined,
+          }
+        })
+        .catch((e: any) => {
+          if (e.meta.statusCode === StatusCodes.NOT_FOUND) {
+            return {
+              instances: [],
+              page: undefined,
+            }
+          }
+          throw e
+        })
       return results
     })
   }
@@ -67,6 +100,7 @@ export const create = ({
     const index = getIndexForModel(instance.getModel())
     const data = await instance.toObj()
     const id = data[instance.getPrimaryKeyName()]
+    await _checkOrCreateIndex(client, index)
     await client.index({
       id,
       index,
@@ -83,6 +117,7 @@ export const create = ({
       return
     }
     const index = getIndexForModel(instances[0].getModel())
+    await _checkOrCreateIndex(client, index)
     const operations = await instances.reduce(
       async (accP: Promise<any[]>, instance: ModelInstance<T, TModel>) => {
         const acc = await accP
@@ -111,6 +146,7 @@ export const create = ({
     instance: ModelInstance<T, TModel>
   ) => {
     const index = getIndexForModel(instance.getModel())
+    await _checkOrCreateIndex(client, index)
     await client.delete({
       index,
       id: await instance.getPrimaryKey(),

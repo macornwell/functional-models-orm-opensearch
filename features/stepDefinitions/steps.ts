@@ -420,7 +420,7 @@ Given('a configured elastic client is created', function () {
   }
 
   this.client = new Client({
-  ...AwsSigv4Signer({
+    ...AwsSigv4Signer({
       region: this.parameters.region,
       service: this.parameters.service || 'es',
       getCredentials: defaultProvider(),
@@ -489,8 +489,7 @@ When(
   '{word} retrieve is called with the id from {word}',
   async function (modelKey, dataKey) {
     const data = DATA[dataKey]()
-    this.results = await this.models[modelKey]
-      .retrieve(data.id)
+    this.results = await this.models[modelKey].retrieve(data.id)
   }
 )
 

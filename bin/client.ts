@@ -6,7 +6,10 @@ import { defaultProvider } from '@aws-sdk/credential-provider-node'
 import { ArgumentParser } from 'argparse'
 import { create as createDatastoreProvider } from '../src/datastoreProvider'
 import repl from 'repl'
-import { orm as createOrm, ormQueryBuilder as queryBuilder } from 'functional-models-orm'
+import {
+  orm as createOrm,
+  ormQueryBuilder as queryBuilder,
+} from 'functional-models-orm'
 
 interface ParsedArgs {
   node: string
@@ -44,7 +47,9 @@ function _parseArguments(): ParsedArgs {
 async function main(): Promise<void> {
   const { node, region, service } = _parseArguments()
 
-  const normalizedService = (service === 'aoss' ? 'aoss' : 'es') as 'es' | 'aoss'
+  const normalizedService = (service === 'aoss' ? 'aoss' : 'es') as
+    | 'es'
+    | 'aoss'
 
   const client = new Client({
     ...AwsSigv4Signer({
@@ -59,7 +64,9 @@ async function main(): Promise<void> {
   const orm = createOrm({ datastoreProvider })
 
   const info = await client.info()
-  console.info('REPL ready. Context: client, orm, Model, datastoreProvider, queryBuilder, node, region, service')
+  console.info(
+    'REPL ready. Context: client, orm, Model, datastoreProvider, queryBuilder, node, region, service'
+  )
 
   const server = repl.start({ prompt: 'opensearch> ', useGlobal: false })
   server.context.client = client
@@ -71,7 +78,9 @@ async function main(): Promise<void> {
   server.context.region = region
   server.context.service = normalizedService
 
-  const historyPath = process.env.OPENSEARCH_REPL_HISTORY ?? path.join(os.homedir(), '.opensearch_repl_history')
+  const historyPath =
+    process.env.OPENSEARCH_REPL_HISTORY ??
+    path.join(os.homedir(), '.opensearch_repl_history')
   server.setupHistory(historyPath, (err: unknown) => {
     if (err) {
       console.warn('REPL history disabled:', err)
